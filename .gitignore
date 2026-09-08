@@ -1,0 +1,10 @@
+build/
+cmake-build-*/
+-DCMAKE_PREFIX_PATH=/
+.idea/
+*.o
+*.a
+.DS_Store
+build.log
+
+cef/
