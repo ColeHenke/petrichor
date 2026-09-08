@@ -11,7 +11,7 @@ class AddressBar : public QLineEdit {
  public:
   explicit AddressBar(QWidget* parent = nullptr);
 
-  // TODO: a setter to update the displayed text (e.g. when the browser
+  // a setter to update the displayed text (e.g. when the browser
   // navigates elsewhere and you want the bar to reflect the real URL
   // without re-triggering urlSubmitted(). Think about why that matters.
   void SetUrl(const QString& url);
@@ -20,7 +20,7 @@ class AddressBar : public QLineEdit {
   void urlSubmitted(const QString& url);
 
  private slots:
-  // TODO: connect this to QLineEdit's own returnPressed() signal in the
+  // connect this to QLineEdit's own returnPressed() signal in the
   // constructor, and have it normalize + emit urlSubmitted().
   void OnReturnPressed();
 };

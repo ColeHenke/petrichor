@@ -13,7 +13,7 @@ class PetrichorApp : public CefApp, public CefBrowserProcessHandler {
  public:
   PetrichorApp();
 
-  // TODO: main() needs to hand us the MainWindow instance before
+  // main() needs to hand us the MainWindow instance before
   // CefInitialize() runs, so OnContextInitialized() has something to call
   // GetCefParentHandle()/GetCefParentRect() on. Store it here.
   void SetMainWindow(MainWindow* main_window);
@@ -32,7 +32,7 @@ class PetrichorApp : public CefApp, public CefBrowserProcessHandler {
   // Returns the default client for Chrome-style popup windows.
   CefRefPtr<CefClient> GetDefaultClient() override;
 
-  // TODO: only called when CefSettings.external_message_pump is true. CEF
+  // only called when CefSettings.external_message_pump is true. CEF
   // is telling us "call CefDoMessageLoopWork() again in delay_ms
   // milliseconds" instead of pumping its own loop. Schedule that with
   // QTimer::singleShot(). Careful: delay_ms can be negative — check CEF's
