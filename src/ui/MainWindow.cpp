@@ -118,3 +118,13 @@ void MainWindow::OnReloadClicked() {
 void MainWindow::SetUrl(const QString& url) {
   address_bar_->SetUrl(url);
 }
+
+void MainWindow::SetNavigationState(bool is_loading, bool canGoBack, bool canGoForward) {
+  back_button_->setEnabled(canGoBack);
+  forward_button_->setEnabled(canGoForward);
+  reload_button_->setEnabled(!is_loading);
+}
+
+void MainWindow::SetWindowTitle(const QString& url) {
+  this->setWindowTitle(url);
+}

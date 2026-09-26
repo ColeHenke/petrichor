@@ -63,13 +63,12 @@ class BrowserHandler : public CefClient,
 
   void ResizeBrowser(CefRefPtr<CefBrowser> browser, const CefRect& rect);
 
-  void OnLoadEnd(CefRefPtr<CefBrowser> browser,
-               CefRefPtr<CefFrame> frame,
-               int httpStatusCode) override;
+  void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
+
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) override;
 
  private:
   // Implemented in BrowserHandler_mac.mm
-  void PlatformTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title);
   void PlatformShowWindow(CefRefPtr<CefBrowser> browser);
   void PlatformResizeView(CefRefPtr<CefBrowser> browser, const CefRect& rect);
 

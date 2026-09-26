@@ -36,14 +36,6 @@ BrowserHandler* BrowserHandler::GetInstance() {
   return g_instance;
 }
 
-void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
-                                   const CefString& title) {
-  CEF_REQUIRE_UI_THREAD();
-  // Always Alloy style — use platform API to set the window title.
-  // TODO: signal Qt MainWindow to update the tab title.
-  PlatformTitleChange(browser, title);
-}
-
 void BrowserHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
   DCHECK_EQ(CEF_RUNTIME_STYLE_ALLOY, browser->GetHost()->GetRuntimeStyle());
@@ -154,4 +146,20 @@ void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<Ce
   }
 
   main_window_->SetUrl(QString::fromStdString(url.ToString()));
+}
+
+void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) {
+  CEF_REQUIRE_UI_THREAD();
+
+  if (main_window_) {
+    main_window_->SetNavigationState(isLoading, canGoBack, canGoForward);
+  }
+}
+
+void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) {
+  CEF_REQUIRE_UI_THREAD();
+
+  if (main_window_) {
+    main_window_->SetWindowTitle(QString::fromStdString(title.ToString()));
+  }
 }

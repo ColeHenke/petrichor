@@ -40,6 +40,9 @@ class MainWindow : public QMainWindow {
 
   void SetUrl(const QString& url);
 
+  void SetNavigationState(bool is_loading, bool canGoBack, bool canGoForward);
+  void SetWindowTitle(const QString& url);
+
 
  protected:
   // Qt will call this whenever the window is resized. Eventually

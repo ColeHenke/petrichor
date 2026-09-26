@@ -18,13 +18,6 @@ NSWindow* GetNSWindowForBrowser(CefRefPtr<CefBrowser> browser) {
 
 }  // namespace
 
-void BrowserHandler::PlatformTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) {
-  NSWindow* window = GetNSWindowForBrowser(browser);
-  std::string titleStr(title);
-  NSString* str = [NSString stringWithUTF8String:titleStr.c_str()];
-  [window setTitle:str];
-}
-
 void BrowserHandler::PlatformShowWindow(CefRefPtr<CefBrowser> browser) {
   NSWindow* window = GetNSWindowForBrowser(browser);
   [window makeKeyAndOrderFront:window];
