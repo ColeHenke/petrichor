@@ -39,16 +39,17 @@ BrowserHandler* BrowserHandler::GetInstance() {
 void BrowserHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
   DCHECK_EQ(CEF_RUNTIME_STYLE_ALLOY, browser->GetHost()->GetRuntimeStyle());
-  browser_list_.push_back(browser);
 
-  if (main_window_ != nullptr) {
-    main_window_->SetBrowser(browser);
+  tab_manager_.AddBrowser(browser);
+  if (main_window_) {
+    main_window_->SetBrowser(tab_manager_.GetActiveBrowser());
+    main_window_->AddTab(browser->GetIdentifier(), QString::fromStdString("new tab"));
   }
 }
 
 bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
-  if (browser_list_.size() == 1) {
+  if (tab_manager_.Count() == 1) {
     is_closing_ = true;
   }
   return false;
@@ -57,14 +58,12 @@ bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser) {
 void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
-  for (auto it = browser_list_.begin(); it != browser_list_.end(); ++it) {
-    if ((*it)->IsSame(browser)) {
-      browser_list_.erase(it);
-      break;
-    }
+  tab_manager_.RemoveBrowser(browser);
+  if (main_window_) {
+    main_window_->SetBrowser(tab_manager_.GetActiveBrowser());
   }
 
-  if (browser_list_.empty()) {
+  if (tab_manager_.IsEmpty()) {
     // Last window closed — shut down the message loop.
     // TODO: replace with Qt shutdown once event loops are integrated.
     CefQuitMessageLoop();
@@ -100,8 +99,9 @@ void BrowserHandler::ShowMainWindow() {
     return;
   }
 
-  if (!browser_list_.empty()) {
-    PlatformShowWindow(browser_list_.front());
+  CefRefPtr<CefBrowser> browser = tab_manager_.GetActiveBrowser();
+  if (browser) {
+    PlatformShowWindow(browser);
   }
 }
 
@@ -116,9 +116,18 @@ void BrowserHandler::CloseAllBrowsers(bool force_close) {
     return;
   }
 
-  for (const auto& browser : browser_list_) {
-    browser->GetHost()->CloseBrowser(force_close);
+  for (const auto& tab : tab_manager_.GetTabs()) {
+    tab.browser->GetHost()->CloseBrowser(force_close);
   }
+}
+
+BrowserHandler::BrowserList BrowserHandler::GetBrowserList() const {
+  BrowserList browsers;
+  browsers.reserve(tab_manager_.Count());
+  for (const auto& tab : tab_manager_.GetTabs()) {
+    browsers.push_back(tab.browser);
+  }
+  return browsers;
 }
 
 void BrowserHandler::ResizeBrowser(CefRefPtr<CefBrowser> browser, const CefRect& rect) {

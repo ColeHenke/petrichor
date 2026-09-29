@@ -6,6 +6,9 @@
 #include "include/internal/cef_types_wrappers.h"  // CefRect
 #include "include/internal/cef_mac.h"             // CefWindowHandle
 #include "include/cef_browser.h"
+#include <QStackedWidget>
+#include <QVBoxLayout>
+#include "ui/TabBar.h"
 
 class AddressBar;
 class QPushButton;
@@ -43,6 +46,9 @@ class MainWindow : public QMainWindow {
   void SetNavigationState(bool is_loading, bool canGoBack, bool canGoForward);
   void SetWindowTitle(const QString& url);
 
+  void AddTab(int browser_id, QString title);
+  void RemoveTab(int browser_id);
+
 
  protected:
   // Qt will call this whenever the window is resized. Eventually
@@ -75,6 +81,10 @@ class MainWindow : public QMainWindow {
   QPushButton* forward_button_ = nullptr;
   QPushButton* reload_button_ = nullptr;
   CefRefPtr<CefBrowser> browser_;
+  TabBar* tab_bar_ = nullptr;
+  QStackedWidget* stack_ = nullptr;
+  QWidget* central_widget_ = nullptr;
+  QVBoxLayout* layout_ = nullptr;
 };
 
 #endif  // MAIN_WINDOW_H_

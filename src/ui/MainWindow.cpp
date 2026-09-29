@@ -44,14 +44,29 @@ void MainWindow::BuildToolbar() {
   connect(address_bar_, &AddressBar::urlSubmitted, this, &MainWindow::OnUrlEntered);
 }
 
+
+
 void MainWindow::SetBrowser(CefRefPtr<CefBrowser> browser) {
   browser_ = browser;
 }
 
 void MainWindow::BuildBrowserContainer() {
   // construct browser_container_ as a plain QWidget and call
-  browser_container_ = new QWidget(this);
-  setCentralWidget(browser_container_);
+
+  central_widget_ = new QWidget(this);
+  layout_ = new QVBoxLayout(central_widget_);
+
+  tab_bar_ = new TabBar(central_widget_);
+  stack_ = new QStackedWidget(central_widget_);
+  browser_container_ = new QWidget(central_widget_);
+  stack_->addWidget(browser_container_);
+
+  layout_->addWidget(tab_bar_);
+  layout_->addWidget(stack_, 1);
+
+  setCentralWidget(central_widget_);
+
+  connect(tab_bar_, &TabBar::currentChanged, stack_, &QStackedWidget::setCurrentIndex);
 }
 
 CefWindowHandle MainWindow::GetCefParentHandle() const {
@@ -60,7 +75,7 @@ CefWindowHandle MainWindow::GetCefParentHandle() const {
 
 CefRect MainWindow::GetCefParentRect() const {
   auto rect = browser_container_->rect();
-  return {rect.x(), rect.y(), rect.width(), rect.height()}; // CefRect via braced intializer
+  return {rect.x(), rect.y(), rect.width(), rect.height()}; // CefRect via braced initializer
 }
 
 void MainWindow::resizeEvent(QResizeEvent* event) {
@@ -127,4 +142,12 @@ void MainWindow::SetNavigationState(bool is_loading, bool canGoBack, bool canGoF
 
 void MainWindow::SetWindowTitle(const QString& url) {
   this->setWindowTitle(url);
+}
+
+void MainWindow::AddTab(int browser_id, QString title) {
+  tab_bar_->AddTab(browser_id, title);
+}
+
+void MainWindow::RemoveTab(int browser_id) {
+  tab_bar_->RemoveTab(browser_id);
 }

@@ -1,10 +1,11 @@
 #ifndef BROWSER_HANDLER_H_
 #define BROWSER_HANDLER_H_
 
-#include <list>
+#include <vector>
 
 #include "include/cef_client.h"
 #include "include/internal/cef_types_wrappers.h"
+#include "browser/TabManager.h"
 
 class MainWindow;
 
@@ -23,7 +24,7 @@ class BrowserHandler : public CefClient,
  public:
   BrowserHandler();
   ~BrowserHandler() override;
-  typedef std::list<CefRefPtr<CefBrowser>> BrowserList;
+  using BrowserList = std::vector<CefRefPtr<CefBrowser>>;
 
   // Returns the single global instance.
   static BrowserHandler* GetInstance();
@@ -59,7 +60,7 @@ class BrowserHandler : public CefClient,
 
   bool IsClosing() const { return is_closing_; }
 
-  BrowserList GetBrowserList() const { return browser_list_; }
+  BrowserList GetBrowserList() const;
 
   void ResizeBrowser(CefRefPtr<CefBrowser> browser, const CefRect& rect);
 
@@ -74,7 +75,7 @@ class BrowserHandler : public CefClient,
 
   MainWindow* main_window_ = nullptr;
 
-  BrowserList browser_list_;
+  TabManager tab_manager_;
 
   bool is_closing_ = false;
 
