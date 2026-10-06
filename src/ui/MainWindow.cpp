@@ -67,6 +67,8 @@ void MainWindow::BuildBrowserContainer() {
   setCentralWidget(central_widget_);
 
   connect(tab_bar_, &TabBar::currentChanged, stack_, &QStackedWidget::setCurrentIndex);
+
+  connect(tab_bar_, &TabBar::NewTabRequested, this, &MainWindow::OnNewTabRequested);
 }
 
 CefWindowHandle MainWindow::GetCefParentHandle() const {
@@ -128,6 +130,14 @@ void MainWindow::OnReloadClicked() {
     return;
   }
   browser_->Reload();
+}
+
+void MainWindow::OnNewTabRequested() {
+  if (!browser_) {
+    return;
+  }
+
+  tab_bar_->AddTab(browser_->GetIdentifier(), "new tab");
 }
 
 void MainWindow::SetUrl(const QString& url) {

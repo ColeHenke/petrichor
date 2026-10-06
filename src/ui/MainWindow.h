@@ -66,6 +66,8 @@ class MainWindow : public QMainWindow {
   void OnForwardClicked();
   void OnReloadClicked();
 
+  void OnNewTabRequested();
+
  private:
   // build the toolbar (QToolBar or a layout with QPushButtons) and
   // the address bar, add them to the window.

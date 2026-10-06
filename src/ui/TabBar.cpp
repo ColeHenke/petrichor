@@ -2,7 +2,12 @@
 
 #include <QVariant>
 
-TabBar::TabBar(QWidget* parent) : QTabBar(parent) {}
+TabBar::TabBar(QWidget* parent) : QTabBar(parent) {
+  add_tab_button_ = new QPushButton("+", this);
+  setTabButton(1, RightSide, add_tab_button_);
+
+  connect(add_tab_button_, &QPushButton::clicked, this, &TabBar::NewTabRequested);
+}
 
 TabBar::~TabBar() = default;
 
