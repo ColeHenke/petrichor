@@ -1,11 +1,9 @@
 #ifndef MAIN_WINDOW_H_
 #define MAIN_WINDOW_H_
 
-#include <cstring>
 #include <QMainWindow>
 
 #include "include/internal/cef_types_wrappers.h"  // CefRect
-#include "include/internal/cef_mac.h"             // CefWindowHandle
 #include "include/cef_browser.h"
 #include <QStackedWidget>
 #include <QVBoxLayout>

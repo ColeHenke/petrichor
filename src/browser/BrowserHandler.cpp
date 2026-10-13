@@ -6,7 +6,6 @@
 
 #include "include/base/cef_callback.h"
 #include "include/cef_app.h"
-#include "include/cef_parser.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 
