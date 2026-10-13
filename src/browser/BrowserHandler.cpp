@@ -14,12 +14,6 @@ namespace {
 
 BrowserHandler* g_instance = nullptr;
 
-std::string GetDataURI(const std::string& data, const std::string& mime_type) {
-  return "data:" + mime_type + ";base64," +
-         CefURIEncode(CefBase64Encode(data.data(), data.size()), false)
-             .ToString();
-}
-
 }  // namespace
 
 BrowserHandler::BrowserHandler() {
@@ -40,16 +34,17 @@ void BrowserHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
   DCHECK_EQ(CEF_RUNTIME_STYLE_ALLOY, browser->GetHost()->GetRuntimeStyle());
 
-  tab_manager_.AddBrowser(browser);
-  if (main_window_) {
-    main_window_->SetBrowser(tab_manager_.GetActiveBrowser());
-    main_window_->AddTab(browser->GetIdentifier(), QString::fromStdString("new tab"));
+  QWidget* host_page = pending_host_page;
+  pending_host_page = nullptr;
+
+  if (main_window_ && host_page) {
+    main_window_->RegisterBrowser(browser, host_page);
   }
 }
 
 bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
-  if (tab_manager_.Count() == 1) {
+  if (main_window_->GetTabManager().Count() == 1) {
     is_closing_ = true;
   }
   return false;
@@ -58,39 +53,16 @@ bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser) {
 void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
-  tab_manager_.RemoveBrowser(browser);
   if (main_window_) {
-    main_window_->SetBrowser(tab_manager_.GetActiveBrowser());
+    main_window_->GetTabManager().RemoveBrowser(browser);
+    main_window_->SetBrowser(main_window_->GetTabManager().GetActiveBrowser());
   }
 
-  if (tab_manager_.IsEmpty()) {
+  if (main_window_->GetTabManager().IsEmpty()) {
     // Last window closed — shut down the message loop.
     // TODO: replace with Qt shutdown once event loops are integrated.
     CefQuitMessageLoop();
   }
-}
-
-void BrowserHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
-                                 CefRefPtr<CefFrame> frame,
-                                 ErrorCode errorCode,
-                                 const CefString& errorText,
-                                 const CefString& failedUrl) {
-  CEF_REQUIRE_UI_THREAD();
-
-  if (errorCode == ERR_ABORTED) {
-    return;
-  }
-
-  std::stringstream ss;
-  ss << "<html><body bgcolor=\"white\">"
-        "<h2>Failed to load URL "
-     << std::string(failedUrl) << " with error " << std::string(errorText)
-     << " (" << errorCode << ").</h2></body></html>";
-
-  frame->LoadURL(GetDataURI(ss.str(), "text/html"));
-
-  fprintf(stderr, "Load error: %s (%d)\n",
-        failedUrl.ToString().c_str(), errorCode);
 }
 
 void BrowserHandler::ShowMainWindow() {
@@ -99,7 +71,7 @@ void BrowserHandler::ShowMainWindow() {
     return;
   }
 
-  CefRefPtr<CefBrowser> browser = tab_manager_.GetActiveBrowser();
+  CefRefPtr<CefBrowser> browser = main_window_->GetTabManager().GetActiveBrowser();
   if (browser) {
     PlatformShowWindow(browser);
   }
@@ -111,20 +83,19 @@ void BrowserHandler::SetMainWindow(MainWindow* main_window) {
 
 void BrowserHandler::CloseAllBrowsers(bool force_close) {
   if (!CefCurrentlyOn(TID_UI)) {
-    CefPostTask(TID_UI, base::BindOnce(&BrowserHandler::CloseAllBrowsers,
-                                       this, force_close));
+    CefPostTask(TID_UI, base::BindOnce(&BrowserHandler::CloseAllBrowsers, this, force_close));
     return;
   }
 
-  for (const auto& tab : tab_manager_.GetTabs()) {
+  for (const auto& tab : main_window_->GetTabManager().GetTabs()) {
     tab.browser->GetHost()->CloseBrowser(force_close);
   }
 }
 
 BrowserHandler::BrowserList BrowserHandler::GetBrowserList() const {
   BrowserList browsers;
-  browsers.reserve(tab_manager_.Count());
-  for (const auto& tab : tab_manager_.GetTabs()) {
+  browsers.reserve(main_window_->GetTabManager().Count());
+  for (const auto& tab : main_window_->GetTabManager().GetTabs()) {
     browsers.push_back(tab.browser);
   }
   return browsers;
@@ -138,13 +109,6 @@ void BrowserHandler::ResizeBrowser(CefRefPtr<CefBrowser> browser, const CefRect&
   }
 
   PlatformResizeView(browser, rect);
-}
-
-void BrowserHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) {
-  CEF_REQUIRE_UI_THREAD();
-
-  fprintf(stderr, "Load finished: %s status=%d\n",
-          frame->GetURL().ToString().c_str(), httpStatusCode);
 }
 
 void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url) {
@@ -163,6 +127,20 @@ void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool is
   if (main_window_) {
     main_window_->SetNavigationState(isLoading, canGoBack, canGoForward);
   }
+}
+
+bool BrowserHandler::CreateBrowserForHost(const CefWindowInfo& window_info, const CefRefPtr<CefClient>& client, const CefString& url, const CefBrowserSettings& browser_settings, QWidget* host_page) {
+  CEF_REQUIRE_UI_THREAD();
+  // A single saved page supports one creation request at a time.
+  if (pending_host_page || !host_page) {
+    return false;
+  }
+  pending_host_page = host_page;
+  if (!CefBrowserHost::CreateBrowser(window_info, client, url, browser_settings, nullptr, nullptr)) {
+    pending_host_page = nullptr;
+    return false;
+  }
+  return true;
 }
 
 void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) {

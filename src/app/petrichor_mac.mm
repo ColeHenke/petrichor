@@ -139,8 +139,8 @@ int main(int argc, char* argv[]) {
     CefRefPtr<PetrichorApp> cef_app(new PetrichorApp);
 
     // Must exist and be registered with cef_app before CefInitialize(),
-    // since OnContextInitialized() (which asks main_window for its native
-    // handle/rect) can fire synchronously from inside that call.
+    // since OnContextInitialized() (which requests the first tab) can fire
+    // synchronously from inside that call.
     MainWindow main_window;
     cef_app->SetMainWindow(&main_window);
 

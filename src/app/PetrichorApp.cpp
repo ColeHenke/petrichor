@@ -35,8 +35,6 @@ void PetrichorApp::OnContextInitialized() {
 
   handler->SetMainWindow(main_window_);
 
-  CefBrowserSettings browser_settings;
-
   // Default URL — will be driven by the Qt address bar later.
   std::string url = "https://www.google.com";
 
@@ -47,20 +45,8 @@ void PetrichorApp::OnContextInitialized() {
     url = cmd_url;
   }
 
-  // Use native window (not CEF's Views framework) so Qt owns the shell.
-  CefWindowInfo window_info;
-
-  // Alloy style gives us a plain native window with no Chrome UI.
-  window_info.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
-
-  // main() calls SetMainWindow() before CefInitialize(), which is what
-  // synchronously triggers this method, so main_window_ is guaranteed set
-  // by the time we get here.
-  window_info.SetAsChild(main_window_->GetCefParentHandle(),
-                          main_window_->GetCefParentRect());
-
-  CefBrowserHost::CreateBrowser(window_info, handler, url,
-                                browser_settings, nullptr, nullptr);
+  // CEF is ready: create the first browser through the same path as new tabs.
+  main_window_->CreateTab(QString::fromStdString(url));
 }
 
 CefRefPtr<CefClient> PetrichorApp::GetDefaultClient() {

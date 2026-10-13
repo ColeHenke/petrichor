@@ -1,6 +1,7 @@
 #ifndef BROWSER_HANDLER_H_
 #define BROWSER_HANDLER_H_
 
+#include <QWidget>
 #include <vector>
 
 #include "include/cef_client.h"
@@ -43,13 +44,6 @@ class BrowserHandler : public CefClient,
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
-  // CefLoadHandler methods:
-  void OnLoadError(CefRefPtr<CefBrowser> browser,
-                   CefRefPtr<CefFrame> frame,
-                   ErrorCode errorCode,
-                   const CefString& errorText,
-                   const CefString& failedUrl) override;
-
   // Show the first browser window (called when app is re-opened via dock).
   void ShowMainWindow();
 
@@ -64,9 +58,9 @@ class BrowserHandler : public CefClient,
 
   void ResizeBrowser(CefRefPtr<CefBrowser> browser, const CefRect& rect);
 
-  void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
-
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) override;
+
+  bool CreateBrowserForHost(const CefWindowInfo& window_info, const CefRefPtr<CefClient>& client, const CefString& url, const CefBrowserSettings& browser_settings, QWidget* host_page);
 
  private:
   // Implemented in BrowserHandler_mac.mm
@@ -75,9 +69,9 @@ class BrowserHandler : public CefClient,
 
   MainWindow* main_window_ = nullptr;
 
-  TabManager tab_manager_;
-
   bool is_closing_ = false;
+
+  QWidget* pending_host_page = nullptr;
 
   IMPLEMENT_REFCOUNTING(BrowserHandler);
 };

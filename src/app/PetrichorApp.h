@@ -14,8 +14,7 @@ class PetrichorApp : public CefApp, public CefBrowserProcessHandler {
   PetrichorApp();
 
   // main() needs to hand us the MainWindow instance before
-  // CefInitialize() runs, so OnContextInitialized() has something to call
-  // GetCefParentHandle()/GetCefParentRect() on. Store it here.
+  // CefInitialize() runs, so OnContextInitialized() can request the first tab.
   void SetMainWindow(MainWindow* main_window);
 
   // CefApp methods:

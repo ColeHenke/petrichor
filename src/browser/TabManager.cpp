@@ -1,5 +1,7 @@
 #include "browser/TabManager.h"
 
+#include <iostream>
+
 bool TabManager::AddBrowser(CefRefPtr<CefBrowser> browser) {
   if (!browser) {
     return false;
