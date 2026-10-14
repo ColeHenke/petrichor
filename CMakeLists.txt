@@ -21,6 +21,7 @@ set_property(DIRECTORY ${CEF_ROOT} PROPERTY EXCLUDE_FROM_ALL TRUE)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 message(STATUS "Qt6 found: ${Qt6_DIR}")
 qt_standard_project_setup()
+set(CMAKE_AUTORCC ON)
 
 # -------------------------------------------------------
 # Target names
@@ -97,6 +98,7 @@ set(PRODUCT_NAME "${CEF_TARGET}")
 add_executable(${CEF_TARGET} MACOSX_BUNDLE
         ${PETRICHOR_RESOURCES_SRCS}
         ${PETRICHOR_SRCS}
+        resources/resources.qrc
 )
 SET_EXECUTABLE_TARGET_PROPERTIES(${CEF_TARGET})
 add_dependencies(${CEF_TARGET} libcef_dll_wrapper)

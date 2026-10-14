@@ -17,6 +17,11 @@
 #include <vector>
 
 #include <QApplication>
+#include <QDebug>
+#include <QFile>
+#include <QTextStream>
+#include <QString>
+#include <QDir>
 
 // Receives notifications from the application.
 @interface BrowserAppDelegate : NSObject <NSApplicationDelegate>
@@ -133,6 +138,15 @@ int main(int argc, char* argv[]) {
     std::vector<char*> qt_argv(argv, argv + argc);
     int qt_argc = argc;
     QApplication qt_app(qt_argc, qt_argv.data());
+
+    // import QSS styles
+    QFile styles(":/styles.qss");
+    if (styles.open(QFile::ReadOnly | QFile::Text)) {
+        QTextStream stream(&styles);
+        qt_app.setStyleSheet(stream.readAll());
+    } else {
+        qWarning() << "Could not load stylesheet resource :/styles.qss:" << styles.errorString();
+    }
 
     // PetrichorApp owns a Qt timer for the external CEF message pump, so Qt
     // must already exist before PetrichorApp is constructed.
