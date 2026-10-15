@@ -59,6 +59,7 @@ class MainWindow : public QMainWindow {
 
   void OnNewTabRequested();
   void OnCurrentTabChanged(int index);
+  void OnCloseTabRequested(int index);
 
  private:
   // build the toolbar (QToolBar or a layout with QPushButtons) and

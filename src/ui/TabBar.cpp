@@ -5,6 +5,7 @@
 TabBar::TabBar(QWidget* parent) : QTabBar(parent) {
   add_tab_button_ = new QPushButton("+", this);
   setTabButton(1, RightSide, add_tab_button_);
+  setTabsClosable(true);
 
   connect(add_tab_button_, &QPushButton::clicked, this, &TabBar::NewTabRequested);
 }

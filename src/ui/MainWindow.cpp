@@ -66,6 +66,7 @@ void MainWindow::BuildBrowserContainer() {
   connect(tab_bar_, &TabBar::currentChanged, this, &MainWindow::OnCurrentTabChanged);
 
   connect(tab_bar_, &TabBar::NewTabRequested, this, &MainWindow::OnNewTabRequested);
+  connect(tab_bar_, &TabBar::tabCloseRequested, this, &MainWindow::OnCloseTabRequested);
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
@@ -154,6 +155,10 @@ void MainWindow::OnCurrentTabChanged(int index) {
   SetNavigationState(browser_->IsLoading(), browser_->CanGoBack(), browser_->CanGoForward());
 }
 
+void MainWindow::OnCloseTabRequested(int index) {
+  RemoveTab(index);
+}
+
 void MainWindow::CreateTab(const QString& url) {
   BrowserHandler* handler = BrowserHandler::GetInstance();
   if (!handler) {
@@ -199,6 +204,8 @@ void MainWindow::AddTab(int browser_id, QString title) {
 }
 
 void MainWindow::RemoveTab(int browser_id) {
+  auto browser = tab_manager_.FindBrowser(browser_id);
+  browser->GetHost()->CloseBrowser(false);
   tab_bar_->RemoveTab(browser_id);
 }
 
