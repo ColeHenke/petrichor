@@ -205,7 +205,8 @@ void MainWindow::AddTab(int browser_id, QString title) {
 
 void MainWindow::RemoveTab(int browser_id) {
   auto browser = tab_manager_.FindBrowser(browser_id);
-  browser->GetHost()->CloseBrowser(false);
+  // todo - what the fuck is going on here bruh
+  // browser->GetHost()->CloseBrowser(false);
   tab_bar_->RemoveTab(browser_id);
 }
 
