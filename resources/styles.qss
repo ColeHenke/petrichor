@@ -1,3 +1,21 @@
 QTabBar::tab {
+    background: #252832;
+    color: #aeb4c0;
+    padding: 8px 14px;
+    border-bottom: 2px solid transparent;
 
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+QTabBar::tab:selected {
+    color: white;
+    background: #343945;
+    border-bottom-color: #7aa2f7;
+}
+
+QTabBar::tab:hover {
+    background: #2e333e;
 }
