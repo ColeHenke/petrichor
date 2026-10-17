@@ -1,1 +1,1 @@
-learning browser fundamentals with cef and qt
+the rain-themed browser
