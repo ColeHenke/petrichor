@@ -57,8 +57,8 @@ set(PETRICHOR_SRCS
         src/browser/BrowserClient.h
         src/browser/BrowserHandler.cpp
         src/browser/BrowserHandler.h
-        src/browser/TabManager.cpp
-        src/browser/TabManager.h
+        src/browser/TabController.cpp
+        src/browser/TabController.h
 )
 
 set(PETRICHOR_SRCS_MAC

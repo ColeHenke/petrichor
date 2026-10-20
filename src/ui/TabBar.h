@@ -4,7 +4,7 @@
 #include <QTabBar>
 #include <QPushButton>
 
-// Qt presentation for tabs. Browser ownership and lookup belong to TabManager.
+// Qt presentation for tabs. Browser ownership and lookup belong to TabController.
 class TabBar : public QTabBar {
   Q_OBJECT
 

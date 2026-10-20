@@ -19,7 +19,7 @@ void TabBar::AddTab(int browser_id, const QString& title) {
 
 bool TabBar::RemoveTab(int browser_id) {
   for (int index = 0; index < count(); ++index) {
-    if (index == browser_id) {
+    if (GetBrowserIdAt(index) == browser_id) {
       removeTab(index);
       return true;
     }

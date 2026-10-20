@@ -3,6 +3,8 @@
 
 #include <sstream>
 #include <string>
+#include <QApplication>
+#include <QMetaObject>
 
 #include "include/base/cef_callback.h"
 #include "include/cef_app.h"
@@ -33,34 +35,27 @@ void BrowserHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
   DCHECK_EQ(CEF_RUNTIME_STYLE_ALLOY, browser->GetHost()->GetRuntimeStyle());
 
-  QWidget* host_page = pending_host_page;
-  pending_host_page = nullptr;
-
-  if (main_window_ && host_page) {
-    main_window_->RegisterBrowser(browser, host_page);
-  }
+  if (tab_controller_) tab_controller_->BrowserCreated(browser);
 }
 
 bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
-  if (main_window_->GetTabManager().Count() == 1) {
-    is_closing_ = true;
-  }
-  return false;
+  if (!tab_controller_) return false;
+  if (tab_controller_->Count() == 1) is_closing_ = true;
+  return tab_controller_->BrowserReadyToClose(browser);
 }
 
 void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
-
-  if (main_window_) {
-    main_window_->GetTabManager().RemoveBrowser(browser);
-    main_window_->SetBrowser(main_window_->GetTabManager().GetActiveBrowser());
+  if (!tab_controller_) {
+    return;
   }
-
-  if (main_window_->GetTabManager().IsEmpty()) {
-    // Last window closed — shut down the message loop.
-    // TODO: replace with Qt shutdown once event loops are integrated.
-    CefQuitMessageLoop();
+  tab_controller_->BrowserClosed(browser);
+  if (tab_controller_->IsEmpty()) {
+    // All browsers are closed. Bypass the Cocoa terminate: override, which
+    // handles requests to close browsers but does not exit Qt's event loop.
+    QMetaObject::invokeMethod(QApplication::instance(),[] { QApplication::exit(0); },
+        Qt::QueuedConnection);
   }
 }
 
@@ -70,14 +65,14 @@ void BrowserHandler::ShowMainWindow() {
     return;
   }
 
-  CefRefPtr<CefBrowser> browser = main_window_->GetTabManager().GetActiveBrowser();
+  CefRefPtr<CefBrowser> browser = tab_controller_ ? tab_controller_->GetActiveBrowser() : nullptr;
   if (browser) {
     PlatformShowWindow(browser);
   }
 }
 
 void BrowserHandler::SetMainWindow(MainWindow* main_window) {
-  main_window_ = main_window;
+  tab_controller_ = main_window ? &main_window->GetTabController() : nullptr;
 }
 
 void BrowserHandler::CloseAllBrowsers(bool force_close) {
@@ -86,15 +81,14 @@ void BrowserHandler::CloseAllBrowsers(bool force_close) {
     return;
   }
 
-  for (const auto& tab : main_window_->GetTabManager().GetTabs()) {
-    tab.browser->GetHost()->CloseBrowser(force_close);
-  }
+  if (tab_controller_) tab_controller_->RequestCloseAll(force_close);
 }
 
 BrowserHandler::BrowserList BrowserHandler::GetBrowserList() const {
   BrowserList browsers;
-  browsers.reserve(main_window_->GetTabManager().Count());
-  for (const auto& tab : main_window_->GetTabManager().GetTabs()) {
+  if (!tab_controller_) return browsers;
+  browsers.reserve(tab_controller_->Count());
+  for (const auto& tab : tab_controller_->GetTabs()) {
     browsers.push_back(tab.browser);
   }
   return browsers;
@@ -113,39 +107,25 @@ void BrowserHandler::ResizeBrowser(CefRefPtr<CefBrowser> browser, const CefRect&
 void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (!frame || !frame->IsMain() || !main_window_) {
+  if (!frame || !frame->IsMain() || !tab_controller_) {
     return;
   }
 
-  main_window_->SetUrl(QString::fromStdString(url.ToString()));
+  tab_controller_->AddressChanged(browser->GetIdentifier(), QString::fromStdString(url.ToString()));
 }
 
 void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (main_window_) {
-    main_window_->SetNavigationState(isLoading, canGoBack, canGoForward);
+  if (tab_controller_) {
+    tab_controller_->LoadingStateChanged(browser->GetIdentifier(), isLoading, canGoBack, canGoForward);
   }
-}
-
-bool BrowserHandler::CreateBrowserForHost(const CefWindowInfo& window_info, const CefRefPtr<CefClient>& client, const CefString& url, const CefBrowserSettings& browser_settings, QWidget* host_page) {
-  CEF_REQUIRE_UI_THREAD();
-  // A single saved page supports one creation request at a time.
-  if (pending_host_page || !host_page) {
-    return false;
-  }
-  pending_host_page = host_page;
-  if (!CefBrowserHost::CreateBrowser(window_info, client, url, browser_settings, nullptr, nullptr)) {
-    pending_host_page = nullptr;
-    return false;
-  }
-  return true;
 }
 
 void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) {
   CEF_REQUIRE_UI_THREAD();
 
-  if (main_window_) {
-    main_window_->SetWindowTitle(QString::fromStdString(title.ToString()));
+  if (tab_controller_) {
+    tab_controller_->TitleChanged(browser->GetIdentifier(), QString::fromStdString(title.ToString()));
   }
 }

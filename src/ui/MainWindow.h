@@ -7,9 +7,8 @@
 #include "include/cef_browser.h"
 #include <QStackedWidget>
 #include <QVBoxLayout>
-#include <QHash>
 
-#include "browser/TabManager.h"
+#include "browser/TabController.h"
 #include "ui/TabBar.h"
 
 class AddressBar;
@@ -30,8 +29,6 @@ class MainWindow : public QMainWindow {
 
   void CreateTab(const QString& url = QStringLiteral("https://www.google.com"));
 
-  void SetBrowser(CefRefPtr<CefBrowser> browser);
-
   void SetUrl(const QString& url);
 
   void SetNavigationState(bool is_loading, bool canGoBack, bool canGoForward);
@@ -39,9 +36,7 @@ class MainWindow : public QMainWindow {
 
   void AddTab(int browser_id, QString title);
   void RemoveTab(int browser_id);
-  TabManager& GetTabManager();
-
-  void RegisterBrowser(CefRefPtr<CefBrowser> browser, QWidget* host_page);
+  TabController& GetTabController();
 
 
  protected:
@@ -69,18 +64,17 @@ class MainWindow : public QMainWindow {
   // Build the tab bar and stack; CreateTab() adds each browser's host page.
   void BuildBrowserContainer();
   void ResizeBrowserForPage(QWidget* page);
+  void ApplyActiveBrowser(int browser_id);
 
   AddressBar* address_bar_ = nullptr;
   QPushButton* back_button_ = nullptr;
   QPushButton* forward_button_ = nullptr;
   QPushButton* reload_button_ = nullptr;
-  CefRefPtr<CefBrowser> browser_;
   TabBar* tab_bar_ = nullptr;
   QStackedWidget* stack_ = nullptr;
   QWidget* central_widget_ = nullptr;
   QVBoxLayout* layout_ = nullptr;
-  TabManager tab_manager_;
-  QHash<int, QWidget*> host_pages_by_browser_id_;
+  TabController tab_controller_;
 };
 
 #endif  // MAIN_WINDOW_H_
