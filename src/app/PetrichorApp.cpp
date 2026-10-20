@@ -46,6 +46,13 @@ void PetrichorApp::OnContextInitialized() {
   main_window_->CreateTab(QString::fromStdString(url));
 }
 
+void PetrichorApp::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) {
+  CefApp::OnBeforeCommandLineProcessing(process_type, command_line);
+
+  // creates an in-memory data store - prevents the lwk annoying popups for now
+  command_line->AppendSwitch("use-mock-keychain");
+}
+
 CefRefPtr<CefClient> PetrichorApp::GetDefaultClient() {
   return BrowserHandler::GetInstance();
 }
