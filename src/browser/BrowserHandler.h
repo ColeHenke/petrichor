@@ -1,12 +1,12 @@
 #ifndef BROWSER_HANDLER_H_
 #define BROWSER_HANDLER_H_
 
-#include <QWidget>
+#include <QPointer>
 #include <vector>
 
 #include "include/cef_client.h"
 #include "include/internal/cef_types_wrappers.h"
-#include "browser/TabManager.h"
+#include "browser/TabController.h"
 
 class MainWindow;
 
@@ -60,18 +60,15 @@ class BrowserHandler : public CefClient,
 
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) override;
 
-  bool CreateBrowserForHost(const CefWindowInfo& window_info, const CefRefPtr<CefClient>& client, const CefString& url, const CefBrowserSettings& browser_settings, QWidget* host_page);
 
  private:
   // Implemented in BrowserHandler_mac.mm
   void PlatformShowWindow(CefRefPtr<CefBrowser> browser);
   void PlatformResizeView(CefRefPtr<CefBrowser> browser, const CefRect& rect);
 
-  MainWindow* main_window_ = nullptr;
+  QPointer<TabController> tab_controller_;
 
   bool is_closing_ = false;
-
-  QWidget* pending_host_page = nullptr;
 
   IMPLEMENT_REFCOUNTING(BrowserHandler);
 };

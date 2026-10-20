@@ -8,10 +8,26 @@
 #include "ui/AddressBar.h"
 #include "browser/BrowserHandler.h"
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), tab_controller_(this) {
   // call BuildToolbar() and BuildBrowserContainer()
   BuildToolbar();
   BuildBrowserContainer();
+  connect(&tab_controller_, &TabController::TabAdded, this, [this](int id) {
+    QSignalBlocker blocker(tab_bar_);
+    AddTab(id, QStringLiteral("new tab"));
+  });
+  connect(&tab_controller_, &TabController::TabRemoved, this, &MainWindow::RemoveTab);
+  connect(&tab_controller_, &TabController::ActiveBrowserChanged,
+          this, &MainWindow::ApplyActiveBrowser);
+  connect(&tab_controller_, &TabController::HostCloseRequested, this, [this](QWidget* page) {
+    page->removeEventFilter(this);
+    stack_->removeWidget(page);
+    page->deleteLater();
+  });
+  connect(&tab_controller_, &TabController::ActiveUrlChanged, this, &MainWindow::SetUrl);
+  connect(&tab_controller_, &TabController::ActiveTitleChanged, this, &MainWindow::SetWindowTitle);
+  connect(&tab_controller_, &TabController::ActiveNavigationChanged,
+          this, &MainWindow::SetNavigationState);
   // set a reasonable initial window size
   resize(1200, 900);
   // set a window title, e.g. setWindowTitle
@@ -47,10 +63,6 @@ void MainWindow::BuildToolbar() {
 
 
 
-void MainWindow::SetBrowser(CefRefPtr<CefBrowser> browser) {
-  browser_ = browser;
-}
-
 void MainWindow::BuildBrowserContainer() {
   central_widget_ = new QWidget(this);
   layout_ = new QVBoxLayout(central_widget_);
@@ -66,6 +78,7 @@ void MainWindow::BuildBrowserContainer() {
   connect(tab_bar_, &TabBar::currentChanged, this, &MainWindow::OnCurrentTabChanged);
 
   connect(tab_bar_, &TabBar::NewTabRequested, this, &MainWindow::OnNewTabRequested);
+  connect(tab_bar_, &TabBar::tabCloseRequested, this, &MainWindow::OnCloseTabRequested);
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
@@ -82,8 +95,7 @@ void MainWindow::ResizeBrowserForPage(QWidget* page) {
   if (!handler) {
     return;
   }
-  const int browser_id = host_pages_by_browser_id_.key(page, -1);
-  const auto browser = tab_manager_.FindBrowser(browser_id);
+  const auto browser = tab_controller_.FindBrowserForHostPage(page);
   if (browser) {
     const auto rect = page->rect();
     handler->ResizeBrowser(browser, {0, 0, rect.width(), rect.height()});
@@ -91,10 +103,11 @@ void MainWindow::ResizeBrowserForPage(QWidget* page) {
 }
 
 void MainWindow::OnUrlEntered(const QString& url) {
-  if (!browser_) {
+  const auto browser = tab_controller_.GetActiveBrowser();
+  if (!browser) {
     return;
   }
-  CefRefPtr<CefFrame> frame = browser_->GetMainFrame();
+  CefRefPtr<CefFrame> frame = browser->GetMainFrame();
 
   if (!frame) {
     return;
@@ -103,30 +116,33 @@ void MainWindow::OnUrlEntered(const QString& url) {
 }
 
 void MainWindow::OnBackClicked() {
-  if (!browser_) {
+  const auto browser = tab_controller_.GetActiveBrowser();
+  if (!browser) {
     return;
   }
 
-  if (browser_->CanGoBack()) {
-    browser_->GoBack();
+  if (browser->CanGoBack()) {
+    browser->GoBack();
   }
 }
 
 void MainWindow::OnForwardClicked() {
-  if (!browser_) {
+  const auto browser = tab_controller_.GetActiveBrowser();
+  if (!browser) {
     return;
   }
 
-  if (browser_->CanGoForward()) {
-    browser_->GoForward();
+  if (browser->CanGoForward()) {
+    browser->GoForward();
   }
 }
 
 void MainWindow::OnReloadClicked() {
-  if (!browser_) {
+  const auto browser = tab_controller_.GetActiveBrowser();
+  if (!browser) {
     return;
   }
-  browser_->Reload();
+  browser->Reload();
 }
 
 void MainWindow::OnNewTabRequested() {
@@ -134,24 +150,30 @@ void MainWindow::OnNewTabRequested() {
 }
 
 void MainWindow::OnCurrentTabChanged(int index) {
-  const int browser_id = tab_bar_->GetBrowserIdAt(index);
+  tab_controller_.SetActiveBrowser(tab_bar_->GetBrowserIdAt(index));
+}
 
-  if (!tab_manager_.SetActiveBrowser(browser_id)) {
+void MainWindow::ApplyActiveBrowser(int browser_id) {
+  const auto browser = tab_controller_.GetActiveBrowser();
+  QWidget* page = tab_controller_.FindHostPage(browser_id);
+  if (!browser || !page) {
+    SetUrl(QString());
+    SetNavigationState(true, false, false);
     return;
   }
-
-  QWidget* page = host_pages_by_browser_id_.value(browser_id, nullptr);
-  if (!page) {
-    return;
+  {
+    QSignalBlocker blocker(tab_bar_);
+    tab_bar_->SetActiveTab(browser_id);
   }
-
   stack_->setCurrentWidget(page);
-  browser_ = tab_manager_.GetActiveBrowser();
   ResizeBrowserForPage(page);
-  if (const auto frame = browser_->GetMainFrame()) {
+  if (const auto frame = browser->GetMainFrame())
     SetUrl(QString::fromStdString(frame->GetURL().ToString()));
-  }
-  SetNavigationState(browser_->IsLoading(), browser_->CanGoBack(), browser_->CanGoForward());
+  SetNavigationState(browser->IsLoading(), browser->CanGoBack(), browser->CanGoForward());
+}
+
+void MainWindow::OnCloseTabRequested(int index) {
+  tab_controller_.RequestCloseTab(tab_bar_->GetBrowserIdAt(index));
 }
 
 void MainWindow::CreateTab(const QString& url) {
@@ -165,16 +187,7 @@ void MainWindow::CreateTab(const QString& url) {
   host_page->installEventFilter(this);
   host_page->resize(stack_->contentsRect().size());
 
-  QRect qBounds = host_page->rect();
-  CefRect cefBounds(qBounds.x(), qBounds.y(), qBounds.width(), qBounds.height());
-
-  CefWindowInfo window_info;
-  window_info.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
-  window_info.SetAsChild(reinterpret_cast<CefWindowHandle>(host_page->winId()), cefBounds);
-
-  CefBrowserSettings browser_settings;
-
-  if (!handler->CreateBrowserForHost(window_info, handler, url.toStdString(), browser_settings, host_page)) {
+  if (!tab_controller_.CreateTab(url, host_page)) {
     stack_->removeWidget(host_page);
     delete host_page;
   }
@@ -199,23 +212,10 @@ void MainWindow::AddTab(int browser_id, QString title) {
 }
 
 void MainWindow::RemoveTab(int browser_id) {
+  QSignalBlocker blocker(tab_bar_);
   tab_bar_->RemoveTab(browser_id);
 }
 
-TabManager& MainWindow::GetTabManager() {
-  return tab_manager_;
-}
-
-void MainWindow::RegisterBrowser(CefRefPtr<CefBrowser> browser, QWidget* host_page) {
-  if (!browser || !host_page || !tab_manager_.AddBrowser(browser)) {
-    return;
-  }
-  host_pages_by_browser_id_.insert(browser->GetIdentifier(), host_page);
-  {
-    // addTab() can emit currentChanged before setTabData() stores the ID.
-    QSignalBlocker blocker(tab_bar_);
-    AddTab(browser->GetIdentifier(), QStringLiteral("new tab"));
-    tab_bar_->SetActiveTab(browser->GetIdentifier());
-  }
-  OnCurrentTabChanged(tab_bar_->currentIndex());
+TabController& MainWindow::GetTabController() {
+  return tab_controller_;
 }

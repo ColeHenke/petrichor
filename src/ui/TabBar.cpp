@@ -5,6 +5,7 @@
 TabBar::TabBar(QWidget* parent) : QTabBar(parent) {
   add_tab_button_ = new QPushButton("+", this);
   setTabButton(1, RightSide, add_tab_button_);
+  setTabsClosable(true);
 
   connect(add_tab_button_, &QPushButton::clicked, this, &TabBar::NewTabRequested);
 }
@@ -23,7 +24,6 @@ bool TabBar::RemoveTab(int browser_id) {
       return true;
     }
   }
-
   return false;
 }
 
@@ -34,7 +34,6 @@ bool TabBar::SetActiveTab(int browser_id) {
       return true;
     }
   }
-
   return false;
 }
 
