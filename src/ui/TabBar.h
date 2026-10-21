@@ -2,7 +2,7 @@
 #define TAB_BAR_H_
 
 #include <QTabBar>
-#include <QPushButton>
+#include <QToolButton>
 
 // Qt presentation for tabs. Browser ownership and lookup belong to TabController.
 class TabBar : public QTabBar {
@@ -21,7 +21,7 @@ class TabBar : public QTabBar {
   void NewTabRequested();
 
  private:
-  QPushButton* add_tab_button_ = nullptr;
+  QToolButton* add_tab_button_ = nullptr;
 };
 
 #endif  // TAB_BAR_H_
