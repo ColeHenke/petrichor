@@ -3,11 +3,12 @@
 #include <QVariant>
 
 TabBar::TabBar(QWidget* parent) : QTabBar(parent) {
-  add_tab_button_ = new QPushButton("+", this);
-  setTabButton(1, RightSide, add_tab_button_);
+  add_tab_button_ = new QToolButton(this);
+  add_tab_button_->setText("+");
+  add_tab_button_->setAutoRaise(true);
   setTabsClosable(true);
 
-  connect(add_tab_button_, &QPushButton::clicked, this, &TabBar::NewTabRequested);
+  connect(add_tab_button_, &QToolButton::clicked, this, &TabBar::NewTabRequested);
 }
 
 TabBar::~TabBar() = default;
@@ -15,6 +16,8 @@ TabBar::~TabBar() = default;
 void TabBar::AddTab(int browser_id, const QString& title) {
   const int index = addTab(title);
   setTabData(index, browser_id);
+  setTabButton(index - 1, RightSide, nullptr);
+  setTabButton(index, RightSide, add_tab_button_);
 }
 
 bool TabBar::RemoveTab(int browser_id) {
