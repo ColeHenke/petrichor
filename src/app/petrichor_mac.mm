@@ -112,8 +112,7 @@ int main(int argc, char* argv[]) {
     [BrowserApplication sharedApplication];
     CHECK([NSApp isKindOfClass:[BrowserApplication class]]);
 
-    CefRefPtr<CefCommandLine> command_line =
-        CefCommandLine::CreateCommandLine();
+    CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
     command_line->InitFromArgv(argc, argv);
 
     CefSettings settings;

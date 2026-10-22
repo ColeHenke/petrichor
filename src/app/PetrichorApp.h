@@ -28,6 +28,8 @@ class PetrichorApp : public CefApp, public CefBrowserProcessHandler {
   // initialized. This is the earliest point at which we can create browsers.
   void OnContextInitialized() override;
 
+  void OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line) override;
+
   // Returns the default client for Chrome-style popup windows.
   CefRefPtr<CefClient> GetDefaultClient() override;
 
